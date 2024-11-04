@@ -265,8 +265,7 @@ class Simplifier(lark.Transformer):
     def number(self, children):
         return int(children[0].value)
 
-tree = parser.parse("1+2")
-tree1 = Simplifier().transform(tree)
+
 ########################################
 # other transformations
 ########################################
@@ -304,7 +303,66 @@ def minify(expr):
     >>> minify("1 + (((2)*(3)) + 4 * ((5 + 6) - 7))")
     '1+2*3+4*(5+6-7)'
     '''
+    from lark import Lark, Transformer
+    class Simplifier(Transformer):
+        def start(self, children):
+            return children[0]
+        
+        def add(self, children):
+            return f"{children[0]}+{children[1]}"
+        
+        def sub(self, children):
+            return f"{children[0]}-{children[1]}"
+        
+        def mul(self, children):
+            left, right = children
+            if isinstance(left, str) and '+' in left or '-' in left:
+                left = f"({left})"
+            if isinstance(right, str) and '+' in right or '-' in right:
+                right = f"({right})"
+            return f"{left}*{right}"
+        
+        def div(self, children):
+            left, right = children
+            if isinstance(left, str) and '+' in left or '-' in left:
+                left = f"({left})"
+            if isinstance(right, str) and '+' in right or '-' in right:
+                right = f"({right})"
+            return f"{left}/{right}"
+        
+        def mod(self, children):
+            left, right = children
+            if isinstance(left, str) and '+' in left or '-' in left:
+                left = f"({left})"
+            if isinstance(right, str) and '+' in right or '-' in right:
+                right = f"({right})"
+            return f"{left}%{right}"
+        
+        def expo(self, children):
+            left, right = children
+            if isinstance(left, str) and '+' in left or '-' in left or '*' in left or '/' in left:
+                left = f"({left})"
+            if isinstance(right, str) and '+' in right or '-' in right or '*' in right or '/' in right:
+                right = f"({right})"
+            return f"{left}**{right}"
+        
+        def number(self, children):
+            return children[0].value
+        
+        def expr(self, children):
+            if len(children) == 1:
+                return children[0]
+            return f"({children[0]})"
 
+    parser = Lark(grammar, parser='lalr', transformer=Simplifier())
+
+    def simplify_expression(expression):
+        return parser.parse(expression)
+
+    def minify_expression(expression):
+        simplified = simplify_expression(expression)
+        return simplified 
+    return minify_expression(expr)
 
 def infix_to_rpn(expr):
     '''
@@ -329,7 +387,8 @@ def infix_to_rpn(expr):
     >>> infix_to_rpn('(1*2)+3+4*(5-6)')
     '1 2 * 3 + 4 5 6 - * +'
     '''
-
+    return parser.parse(expr)
+infix_to_rpn('1')
 
 def eval_rpn(expr):
     '''
