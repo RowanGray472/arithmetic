@@ -356,14 +356,7 @@ def minify(expr):
 
     parser = Lark(grammar, parser='lalr', transformer=Simplifier())
 
-    def simplify_expression(expression):
-        return parser.parse(expression)
-
-    def minify_expression(expression):
-        simplified = simplify_expression(expression)
-        return simplified 
-    return minify_expression(expr)
-
+    return parser.parse(expr)
 def infix_to_rpn(expr):
     '''
     This function takes an expression in standard infix notation and converts it into an expression in reverse polish notation.
@@ -387,9 +380,27 @@ def infix_to_rpn(expr):
     >>> infix_to_rpn('(1*2)+3+4*(5-6)')
     '1 2 * 3 + 4 5 6 - * +'
     '''
-    return parser.parse(expr)
+    class Interpreter(lark.visitors.Interpreter):
+        """
+        This will have the following methods
+        start
+        add
+        sub
+        mul
+        """
+        def start(self, tree):
+            return self.visit(tree.children[0])
+        def add(self, tree):
+            return self.visit(tree.children[0]) + " " + self.visit(tree.children[1]) + " +"
+        def sub(self, tree):
+            return self.visit(tree.children[0]) + " " + self.visit(tree.children[1]) + " -"
+        def mul(self, tree):
+            return self.visit(tree.children[0]) + " " + self.visit(tree.children[1]) + " *"
+        def number(self, tree):
+            return str(tree.children[0].value)
+    interpreter = Interpreter()
+    return interpreter.visit(parser.parse(expr))
 infix_to_rpn('1')
-
 def eval_rpn(expr):
     '''
     This function evaluates an expression written in RPN.
